@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace dotnet_auth.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240524035840_UpdateUser")]
-    partial class UpdateUser
+    [Migration("20240524153109_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

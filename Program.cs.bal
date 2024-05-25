@@ -1,25 +1,20 @@
 using System.Text;
-using Controller;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Models;
-using Service.Interface;
-using Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// ตั้งค่า logging
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
 
 // Configure JWT authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme; // เปลี่ยน DefaultAuthenticateScheme เป็น CookieAuthenticationDefaults.AuthenticationScheme
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme; // เปลี่ยน DefaultChallengeScheme เป็น CookieAuthenticationDefaults.AuthenticationScheme
 }).AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -29,16 +24,8 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        // ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-    };
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            // Extract token from cookie
-            context.Token = context.Request.Cookies["access_token"];
-            return Task.CompletedTask;
-        }
     };
 }).AddCookie(options =>
 {
@@ -49,11 +36,22 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
 
 // configure authorization
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder();
+
+// builder.Services.AddAuthorization();
+
+// ตั้งค่า logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 // อ่านค่าจาก appsettings.json
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// add identity and opt-in to endpoints
+// builder.Services.AddIdentityCore<IdentityUser>()
+//     .AddEntityFrameworkStores<AppDbContext>()
+//     .AddApiEndpoints();
 
 // Add services to the container.
 
@@ -61,8 +59,6 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-builder.Services.AddSingleton<IUserService, UserService>();
 
 var app = builder.Build();
 
@@ -73,11 +69,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseAuthentication();
-app.UseHttpsRedirection();
-
+app.MapRazorPages();
+app.MapDefaultControllerRoute();
+app.UseAuthentication(); // Ensure JWT authentication is used
 app.UseAuthorization();
-
+app.UseRouting(); // เพิ่ม UseRouting สำหรับใช้ Cookie
+app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
