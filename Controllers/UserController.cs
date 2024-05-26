@@ -1,8 +1,9 @@
 
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Models;
+using Service.Interface;
 
 namespace Controller;
 
@@ -10,9 +11,11 @@ namespace Controller;
 [Route("[controller]")]
 public class UserController(
     ApplicationDbContext context,
-    ILogger<UserController> logger
+    ILogger<UserController> logger,
+    IUserService userService
     ) : ControllerBase
 {
+    private readonly IUserService _userService = userService;
     private readonly ApplicationDbContext _context = context;
     private readonly ILogger<UserController> _logger = logger;
 
@@ -20,7 +23,7 @@ public class UserController(
     [Route("signin/local")]
     public async Task<ActionResult> Signup([FromBody] User dto)
     {
-        var userExists = await FindUser(dto.Username);
+        var userExists = await _userService.FindUser(dto.Username);
 
         if (userExists != null)
         {
@@ -41,19 +44,17 @@ public class UserController(
     [Authorize]
     [HttpPost]
     [Route("profile")]
-    public ActionResult<User> Profile()
+    public async Task<ActionResult> Profile()
     {
-        return new User
-        {
-            Username = "1123",
-            Password = "12123"
-        };
-    }
-
-    // ไม่สร้าง API documentation สำหรับแอ็กชันนี้
-    [ApiExplorerSettings(IgnoreApi = true)] 
-    public async Task<User?> FindUser(string username)
-    {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+        // var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var username = User.FindFirst("username")?.Value;
+        var user = await _userService.FindUser(username!);
+        return Ok(
+            new Profile
+            {
+                Username = user!.Username,
+                UserId = user.Id.ToString()
+            }
+        );
     }
 }

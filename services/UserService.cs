@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Models;
 using Service.Interface;
@@ -12,7 +11,6 @@ public class UserService(
     private readonly ApplicationDbContext _context = context;
     public async Task<User?> FindUser(string username)
     {
-        Console.WriteLine("test ", username);
         return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
     }
 }
