@@ -4,17 +4,16 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Models;
 using Service.Interface;
+using dotenv.net;
 
 namespace Services;
 
-public class TokenService(IConfiguration config) : ITokenService
+public class TokenService() : ITokenService
 {
-    private readonly IConfiguration _config = config;
-
     public Tokens GenTokens(string userId, string username)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        var atSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(DotEnv.Read()["AT_SECRET_KEY"]));
+        var rtSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(DotEnv.Read()["RT_SECRET_KEY"]));
 
         var claims = new List<Claim>
         {
@@ -23,19 +22,19 @@ public class TokenService(IConfiguration config) : ITokenService
         };
 
         var at = new JwtSecurityToken(
-            _config["Jwt:Issuer"],
-            _config["Jwt:Issuer"],
+            DotEnv.Read()["ISSUER"],
+            DotEnv.Read()["ISSUER"],
             claims,
             expires: DateTime.Now.AddMinutes(15),
-            signingCredentials: credentials
+            signingCredentials: new SigningCredentials(atSecurityKey, SecurityAlgorithms.HmacSha256)
         );
 
         var rt = new JwtSecurityToken(
-            _config["Jwt:Issuer"],
-            _config["Jwt:Issuer"],
+            DotEnv.Read()["ISSUER"],
+            DotEnv.Read()["ISSUER"],
             claims,
             expires: DateTime.Now.AddDays(7),
-            signingCredentials: credentials
+            signingCredentials: new SigningCredentials(rtSecurityKey, SecurityAlgorithms.HmacSha256)
         );
 
         return new Tokens

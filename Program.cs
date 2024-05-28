@@ -1,6 +1,5 @@
 using System.Text;
-using Controller;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using dotenv.net;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +9,9 @@ using Service.Interface;
 using Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// load dotenv
+DotEnv.Load();
 
 // ตั้งค่า logging
 builder.Logging.ClearProviders();
@@ -28,8 +30,8 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        ValidIssuer = DotEnv.Read()["ISSUER"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(DotEnv.Read()["AT_SECRET_KEY"]))
     };
     options.Events = new JwtBearerEvents
     {
@@ -40,10 +42,8 @@ builder.Services.AddAuthentication(options =>
             return Task.CompletedTask;
         }
     };
-}).AddCookie(options =>
-{
-    options.Cookie.HttpOnly = true; // ทำให้ Cookie เป็น HttpOnly เพื่อป้องกันการแอบอ่านโดย JavaScript
 });
+// Console.WriteLine("hello world");
 
 // cookie authentication
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();

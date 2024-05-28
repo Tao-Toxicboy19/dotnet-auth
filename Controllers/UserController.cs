@@ -8,7 +8,7 @@ using Service.Interface;
 namespace Controller;
 
 [ApiController]
-[Route("[controller]")]
+[Route("user")]
 public class UserController(
     ApplicationDbContext context,
     ILogger<UserController> logger,
